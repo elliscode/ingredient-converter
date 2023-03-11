@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+</head>
+
+<body>
+  <h1>Cooking Calculator</h1>
+  <p>Use natural language to convert your making ingredients to other units</p>
+  <p>Example:
+  <blockquote>1 1/2 stick of butter</blockquote>
+  <blockquote>120 ml heavy cream to g</blockquote>
+  <blockquote>5.5 pounds of potatoes to kilograms</blockquote>
+  <blockquote>4 sticks of butter to oz</blockquote>
+  </p>
+  <textarea id="input">1 1/2 stick of butter
+120 ml heavy cream to g
+5.5 pounds of potatoes to kilograms
+4 sticks of butter to oz</textarea>
+  <textarea id="output"></textarea>
+  <p>If a conversion is missing, let us know by filling out the form at the bottom of the page!</p>
+</body>
+<script>
+  const volumeUnits = { // unit: ml
+    'cup': 236.588,
+    'tsp': 4.92892,
+    'TBSP': 14.7868,
+    'mL': 1,
+    'L': 1000,
+    'gallon': 3785.41,
+    'fl oz': 29.5735,
+  };
+  const massUnits = { // unit: g
+    'oz': 28.3495,
+    'lb': 453.592,
+    'kg': 1000,
+    'mg': 0.001,
+  };
+  const densityValues = { // g / ml
+    'water': 1.0,
+    'milk': 244 / 236.588,
+    'butter': 225 / 236.588,
+    'flour': 150 / 236.588,
+    'powdered sugar': 130 / 236.588,
+    'sugar': 200 / 236.588,
+    '00\' Pizza Flour': 116 / 236.588,
+    'Agave syrup': 84 / 236.588,
+    'All-Purpose Flour': 120 / 236.588,
+    'Almond Flour': 96 / 236.588,
+    'Almond meal': 84 / 236.588,
+    'Almond paste (packed)': 259 / 236.588,
+    'Almonds (sliced)': 43 / 236.588,
+    'Almonds (slivered)': 57 / 236.588,
+    'Almonds, whole (unblanched)': 142 / 236.588,
+    'Amaranth flour': 103 / 236.588,
+    'Apple juice concentrate': 70 / 236.588,
+    'Apples (dried, diced)': 85 / 236.588,
+    'Apples (peeled, sliced)': 113 / 236.588,
+    'Applesauce': 255 / 236.588,
+    'Apricots (dried, diced)': 64 / 236.588,
+    'Artisan Bread Flour': 120 / 236.588,
+    'Artisan Bread Topping': 43 / 236.588,
+    'Baker\'s Cinnamon Filling': 152 / 236.588,
+    'Baker\'s Fruit Blend': 128 / 236.588,
+    'Baker\'s Special Sugar (superfine sugar, castor sugar)': 190 / 236.588,
+    'Baking powder': 192 / 236.588,
+    'Baking soda': 144 / 236.588,
+    'Baking Sugar Alternative': 170 / 236.588,
+    'Bananas (mashed)': 227 / 236.588,
+    'Barley (cooked)': 215 / 236.588,
+    'Barley (pearled)': 213 / 236.588,
+    'Barley flakes': 46 / 236.588,
+    'Barley flour': 85 / 236.588,
+    'Barley malt syrup': 672 / 236.588,
+    'Basil pesto': 448 / 236.588,
+    'Bell peppers (fresh)': 142 / 236.588,
+    'Berries (frozen)': 142 / 236.588,
+    'Better Cheddar Cheese Powder': 57 / 236.588,
+    'Blueberries (dried)': 156 / 236.588,
+    'Blueberry juice': 241 / 236.588,
+    'Boiled cider': 85 / 236.588,
+    'Bran cereal': 60 / 236.588,
+    'Bread crumbs (dried)': 28 / 236.588,
+    'Bread crumbs (fresh)': 21 / 236.588,
+    'Bread crumbs (Japanese Panko)': 50 / 236.588,
+    'Bread Flour': 120 / 236.588,
+    'Brown rice (cooked)': 170 / 236.588,
+    'Brown rice flour': 128 / 236.588,
+    'Brown sugar (dark or light, packed)': 213 / 236.588,
+    'Buckwheat (whole)': 170 / 236.588,
+    'Buckwheat Flour': 120 / 236.588,
+    'Bulgur': 152 / 236.588,
+    'Butter': 113 / 236.588,
+    'Buttermilk': 227 / 236.588,
+    'Buttermilk powder': 288 / 236.588,
+    'Cacao nibs': 120 / 236.588,
+    'Cake Enhancer': 224 / 236.588,
+    'Candied peel': 85 / 236.588,
+    'Caramel (14-16': 142 / 236.588,
+    'Caramel bits (chopped Heath or toffee)': 156 / 236.588,
+    'Caraway seeds': 288 / 236.588,
+    'Carrots (cooked and puréed)': 128 / 236.588,
+    'Carrots (diced)': 142 / 236.588,
+    'Carrots (grated)': 99 / 236.588,
+    'Cashews (chopped)': 113 / 236.588,
+    'Cashews (whole)': 113 / 236.588,
+    'Celery (diced)': 142 / 236.588,
+    'Cheese (Feta)': 57 / 236.588,
+    'Cheese (grated cheddar, jack, mozzarella, or Swiss)': 113 / 236.588,
+    'Cheese (grated Parmesan)': 50 / 236.588,
+    'Cheese (Ricotta)': 227 / 236.588,
+    'Cherries (candied)': 50 / 236.588,
+    'Cherries (dried)': 71 / 236.588,
+    'Cherries (fresh, pitted, chopped)': 80 / 236.588,
+    'Cherries (frozen)': 113 / 236.588,
+    'Cherry Concentrate': 672 / 236.588,
+    'Chickpea flour': 85 / 236.588,
+    'Chives (fresh)': 21 / 236.588,
+    'Chocolate (chopped)': 170 / 236.588,
+    'Chocolate Chips': 170 / 236.588,
+    'Chocolate Chunks': 170 / 236.588,
+    'Cinnamon Sweet Bits': 35 / 236.588,
+    'Cinnamon-Sugar': 50 / 236.588,
+    'Cocoa (unsweetened)': 42 / 236.588,
+    'Coconut (sweetened, shredded)': 85 / 236.588,
+    'Coconut (toasted)': 85 / 236.588,
+    'Coconut (unsweetened, desiccated)': 85 / 236.588,
+    'Coconut (unsweetened, large flakes)': 60 / 236.588,
+    'Coconut (unsweetened, shredded)': 53 / 236.588,
+    'Coconut cream (unsweetened)': 284 / 236.588,
+    'Coconut Flour': 128 / 236.588,
+    'Coconut milk; canned, well shaken': 241 / 236.588,
+    'Coconut milk (evaporated)': 242 / 236.588,
+    'Coconut Milk Powder': 57 / 236.588,
+    'Coconut oil': 113 / 236.588,
+    'Coconut sugar': 77 / 236.588,
+    'Confectioners\' sugar (unsifted)': 227 / 236.588,
+    'Cookie crumbs': 85 / 236.588,
+    'Corn (fresh or frozen)': 38 / 236.588,
+    'Corn (popped)': 21 / 236.588,
+    'Corn syrup': 312 / 236.588,
+    'Cornmeal (whole)': 138 / 236.588,
+    'Cornmeal (yellow, Quaker)': 156 / 236.588,
+    'Cornstarch': 28 / 236.588,
+    'Cracked wheat': 149 / 236.588,
+    'Cranberries (dried)': 57 / 236.588,
+    'Cranberries (fresh or frozen)': 99 / 236.588,
+    'Cream (heavy cream, light cream, or half & half)': 227 / 236.588,
+    'Cream cheese': 227 / 236.588,
+    'Cream of coconut': 142 / 236.588,
+    'Crème fraiche': 124 / 236.588,
+    'Crystallized ginger': 92 / 236.588,
+    'Currants': 142 / 236.588,
+    'Dates (chopped)': 149 / 236.588,
+    'Demerara sugar': 220 / 236.588,
+    'Dried Blueberry Powder': 28 / 236.588,
+    'Dried milk (Baker\'s Special Dry Milk)': 28 / 236.588,
+    'Dried nonfat milk (powdered)': 28 / 236.588,
+    'Dried potato flakes (instant mashed potatoes)': 43 / 236.588,
+    'Dried whole milk (powdered)': 50 / 236.588,
+    'Durum Flour': 124 / 236.588,
+    'Easy Roll Dough Improver': 288 / 236.588,
+    'Egg (fresh)': 232.8 / 236.588,
+    'Egg white (fresh)': 223.2 / 236.588,
+    'Egg whites (dried)': 176 / 236.588,
+    'Egg yolk (fresh)': 273.6 / 236.588,
+    'Espresso Powder': 112 / 236.588,
+    'Everything Bagel Topping': 35 / 236.588,
+    'Figs (dried, chopped)': 149 / 236.588,
+    'First Clear Flour': 106 / 236.588,
+    'Flax meal': 50 / 236.588,
+    'Flaxseed': 35 / 236.588,
+    'French-Style Flour': 120 / 236.588,
+    'Fruitcake Fruit Blend': 120 / 236.588,
+    'Garlic (minced)': 448 / 236.588,
+    'Garlic (peeled and sliced)': 149 / 236.588,
+    'Ghee': 44 / 236.588,
+    'Ginger (fresh, sliced)': 57 / 236.588,
+    'Gluten-Free \'00\' Pizza Flour': 100 / 236.588,
+    'Gluten-Free All-Purpose Baking Mix': 120 / 236.588,
+    'Gluten-Free All-Purpose Flour': 156 / 236.588,
+    'Gluten-Free Bread Flour': 120 / 236.588,
+    'Gluten-Free Measure for Measure Flour': 120 / 236.588,
+    'Glutinous rice flour': 120 / 236.588,
+    'Graham cracker crumbs (boxed)': 99 / 236.588,
+    'Graham crackers (crushed)': 142 / 236.588,
+    'Granola': 113 / 236.588,
+    'Grape Nuts': 57 / 236.588,
+    'Harvest Grains Blend': 74 / 236.588,
+    'Hazelnut flour': 89 / 236.588,
+    'Hazelnut Praline Paste': 156 / 236.588,
+    'Hazelnut spread': 160 / 236.588,
+    'Hazelnuts (whole)': 142 / 236.588,
+    'Hi-Maize Natural Fiber': 32 / 236.588,
+    'High-Gluten Flour': 120 / 236.588,
+    'Honey': 336 / 236.588,
+    'Instant ClearJel': 176 / 236.588,
+    'Irish-Style Flour': 110 / 236.588,
+    'Italian-Style Flour': 106 / 236.588,
+    'Jam or preserves': 85 / 236.588,
+    'Jammy Bits': 184 / 236.588,
+    'Keto Wheat Flour': 120 / 236.588,
+    'Keto Wheat Pizza Crust Mix': 110 / 236.588,
+    'Key Lime Juice': 227 / 236.588,
+    'Lard': 113 / 236.588,
+    'Leeks (diced)': 92 / 236.588,
+    'Lemon Crumbles': 180 / 236.588,
+    'Lemon juice': 224 / 236.588,
+    'Lemon Juice Powder': 288 / 236.588,
+    'Lime Juice Powder': 288 / 236.588,
+    'Macadamia nuts (whole)': 149 / 236.588,
+    'Malt syrup': 688 / 236.588,
+    'Malted Milk Powder': 35 / 236.588,
+    'Malted Wheat Flakes': 64 / 236.588,
+    'Maple sugar': 78 / 236.588,
+    'Maple syrup': 156 / 236.588,
+    'Marshmallow spread, homemade': 72 / 236.588,
+    'Marshmallow spread, store-bought': 123 / 236.588,
+    'Marshmallow Fluff®': 128 / 236.588,
+    'Marshmallows (mini)': 43 / 236.588,
+    'Marzipan': 290 / 236.588,
+    'Masa Harina': 93 / 236.588,
+    'Mascarpone cheese': 227 / 236.588,
+    'Mashed potatoes': 213 / 236.588,
+    'Mashed sweet potatoes': 240 / 236.588,
+    'Mayonnaise': 113 / 236.588,
+    'Medium Rye Flour': 106 / 236.588,
+    'Meringue powder': 43 / 236.588,
+    'Milk (evaporated)': 113 / 236.588,
+    'Milk (fresh)': 227 / 236.588,
+    'Millet (whole)': 103 / 236.588,
+    'Mini chocolate chips': 177 / 236.588,
+    'Molasses': 85 / 236.588,
+    'Mushrooms (sliced)': 78 / 236.588,
+    'Non-Diastatic Malt Powder': 288 / 236.588,
+    'Oat bran': 53 / 236.588,
+    'Oat flour': 92 / 236.588,
+    'Oats (old-fashioned or quick-cooking)': 89 / 236.588,
+    'Oats (prepared)': 147 / 236.588,
+    'Olive oil': 50 / 236.588,
+    'Olives (sliced)': 142 / 236.588,
+    'Onions (fresh, diced)': 142 / 236.588,
+    'Paleo Baking Flour': 104 / 236.588,
+    'Palm shortening': 45 / 236.588,
+    'Passion fruit purée': 60 / 236.588,
+    'Pasta Flour Blend': 145 / 236.588,
+    'Pastry Flour': 106 / 236.588,
+    'Pastry Flour Blend': 113 / 236.588,
+    'Peaches (peeled and diced)': 170 / 236.588,
+    'Peanut butter': 135 / 236.588,
+    'Peanuts (whole, shelled)': 142 / 236.588,
+    'Pears (peeled and diced)': 163 / 236.588,
+    'Pecan Meal': 80 / 236.588,
+    'Pecans (diced)': 57 / 236.588,
+    'Pie Filling Enhancer': 46 / 236.588,
+    'Pine nuts': 71 / 236.588,
+    'Pineapple (crushed, drained)': 256 / 236.588,
+    'Pineapple (dried)': 71 / 236.588,
+    'Pineapple (fresh or canned, diced)': 170 / 236.588,
+    'Pistachio nuts (shelled)': 60 / 236.588,
+    'Pistachio Paste': 78 / 236.588,
+    'Pizza Dough Flavor': 192 / 236.588,
+    'Pizza Flour Blend': 124 / 236.588,
+    'Pizza sauce': 57 / 236.588,
+    'Pizza Seasoning': 160 / 236.588,
+    'Polenta (coarse ground cornmeal)': 163 / 236.588,
+    'Poppy seeds': 288 / 236.588,
+    'Potato Flour': 46 / 236.588,
+    'Potato starch': 152 / 236.588,
+    'Pumpernickel Flour': 106 / 236.588,
+    'Pumpkin purée': 227 / 236.588,
+    'Quinoa (cooked)': 184 / 236.588,
+    'Quinoa (whole)': 177 / 236.588,
+    'Quinoa flour': 110 / 236.588,
+    'Raisins (loose)': 149 / 236.588,
+    'Raisins (packed)': 85 / 236.588,
+    'Raspberries (fresh)': 120 / 236.588,
+    'Rhubarb (sliced, 1/2" slices)': 120 / 236.588,
+    'Rice (long grain, dry)': 99 / 236.588,
+    'Rice flour (white)': 142 / 236.588,
+    'Rice Krispies': 28 / 236.588,
+    'Rye Bread Improver': 224 / 236.588,
+    'Rye Chops': 120 / 236.588,
+    'Rye flakes': 124 / 236.588,
+    'Rye Flour Blend': 106 / 236.588,
+    'Salt (Kosher, Diamond Crystal)': 128 / 236.588,
+    'Salt (Kosher, Morton\'s)': 256 / 236.588,
+    'Salt (table)': 288 / 236.588,
+    'Scallions (sliced)': 64 / 236.588,
+    'Self-Rising Flour': 113 / 236.588,
+    'Semolina Flour': 163 / 236.588,
+    'Sesame seeds': 71 / 236.588,
+    'Shallots (peeled and sliced)': 156 / 236.588,
+    'Six-Grain Blend': 128 / 236.588,
+    'Snow White Non-Melting Topping Sugar': 57 / 236.588,
+    'Sorghum flour': 138 / 236.588,
+    'Sour cream': 227 / 236.588,
+    'Soy flour': 35 / 236.588,
+    'Sparkling Sugar': 57 / 236.588,
+    'Spelt Flour': 99 / 236.588,
+    'Sprouted Wheat Flour': 113 / 236.588,
+    'Steel cut oats': 70 / 236.588,
+    'Sticky Bun Sugar': 99 / 236.588,
+    'Strawberries (fresh sliced)': 167 / 236.588,
+    'Sugar (granulated white)': 198 / 236.588,
+    'Sugar substitute (Splenda)': 25 / 236.588,
+    'Sundried tomatoes (dry pack)': 170 / 236.588,
+    'Sunflower seeds': 35 / 236.588,
+    'Super 10 Blend': 106 / 236.588,
+    'Swedish Pearl Sugar': 49 / 236.588,
+    'Sweet Ground Chocolate and Cocoa Blend': 28 / 236.588,
+    'Sweetened condensed coconut milk': 288 / 236.588,
+    'Sweetened condensed milk': 78 / 236.588,
+    'Tahini paste': 128 / 236.588,
+    'Tapioca starch or flour': 113 / 236.588,
+    'Tapioca (quick cooking)': 336 / 236.588,
+    'Teff flour': 135 / 236.588,
+    'The Works Bread Topping': 35 / 236.588,
+    'Toasted Almond Flour': 96 / 236.588,
+    'Toffee chunks': 156 / 236.588,
+    'Tomato paste': 464 / 236.588,
+    'Turbinado sugar (raw)': 180 / 236.588,
+    'Unbleached Cake Flour': 120 / 236.588,
+    'Vanilla Extract': 224 / 236.588,
+    'Vegetable oil': 198 / 236.588,
+    'Vegetable shortening': 46 / 236.588,
+    'Vital Wheat Gluten': 288 / 236.588,
+    'Walnuts (chopped)': 113 / 236.588,
+    'Walnuts (whole)': 64 / 236.588,
+    'Water': 227 / 236.588,
+    'Wheat berries (red)': 184 / 236.588,
+    'Wheat bran': 32 / 236.588,
+    'Wheat germ': 28 / 236.588,
+    'White Chocolate Chips': 170 / 236.588,
+    'White Rye Flour': 106 / 236.588,
+    'White Whole Wheat Flour': 113 / 236.588,
+    'Whole Grain Flour Blend': 113 / 236.588,
+    'Whole Wheat Flour (Premium 100%)': 113 / 236.588,
+    'Whole Wheat Pastry Flour / Graham Flour': 96 / 236.588,
+    'Yeast (instant)': 288 / 236.588,
+    'Yeast (instant)': 336 / 236.588,
+    'Yeast (instant)': 144 / 236.588,
+    'Yogurt': 227 / 236.588,
+  };
+  const specialFoodUnits = { // g
+    'butter': { 'stick': 113 },
+  };
+  const fractionalNumberRegex = /([0-9]*)[+\s]*([0-9]+)[\s]*\/[\s]*([0-9]+)/;
+  const decimalRegex = /([0-9]+\.[0-9]+)/;
+  const integerRegex = /([0-9]+)/;
+  const toRegex = /to\s+(.*)/;
+  const parse = () => {
+    const input = document.getElementById('input');
+    const text = input.value;
+    const textLines = text.split(/[\r\n]+/);
+    for (const textLine of textLines) {
+      let startIndex = 0;
+      let value = 1;
+      // first look for a number
+      const fractionalNumberResult = fractionalNumberRegex.exec(textLine);
+      if (fractionalNumberResult) {
+        const integer = parseInt(fractionalNumberResult[1]) || 0;
+        const numerator = parseInt(fractionalNumberResult[2]) || 0;
+        const denominator = parseInt(fractionalNumberResult[3]) || 1;
+        value = integer + (numerator / denominator);
+        startIndex = fractionalNumberResult.index + fractionalNumberResult[0].length;
+      } else if (decimalRegex.exec(textLine)) {
+        const decimalResult = decimalRegex.exec(textLine);
+        value = parseFloat(decimalResult[1]);
+        startIndex = decimalResult.index + decimalResult[0].length;
+      } else if (integerRegex.exec(textLine)) {
+        const integerResult = integerRegex.exec(textLine);
+        value = parseInt(integerResult[1]);
+        startIndex = integerResult.index + integerResult[0].length;
+      }
+      console.log(value);
+      const noNumber = textLine.substring(startIndex).trim();
+      // then look for "to"
+      const toResult = toRegex.exec(noNumber);
+      let endIndex = noNumber.length;
+      let toValue = '';
+      if (toResult) {
+        toValue = toResult[1];
+        endIndex = toResult.index;
+      }
+      const centerPart = noNumber.substring(0, endIndex).trim();
+      console.log(centerPart);
+      console.log(toValue);
+
+    }
+  };
+</script>
+
+</html>
