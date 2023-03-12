@@ -2,40 +2,42 @@
 <html>
 
 <head>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--https://igoradamenko.github.io/awsm.css/index.html-->
+  <link rel="stylesheet" href="awsm.min.css">
 </head>
 
 <body>
   <h1>Cooking Calculator</h1>
-  <p>Use natural language to convert your making ingredients to other units</p>
-  <p>Example:
+  <p>Use natural language to convert your ingredients to other units, or paste an entire recipe!</p>
+  <p>Examples:</p>
   <blockquote>1 1/2 stick of butter</blockquote>
   <blockquote>120 ml heavy cream to g</blockquote>
   <blockquote>5.5 pounds of potatoes to kilograms</blockquote>
   <blockquote>4 sticks of butter to oz</blockquote>
-  </p>
-  <textarea id="input">1 1/2 stick of butter
+  <p>Paste a whole recipe to see the conversions of each ingredient!</p>
+  <textarea id="input" onkeyup="parse()">1 1/2 stick of butter
 120 ml heavy cream to g
 5.5 pounds of potatoes to kilograms
 4 sticks of butter to oz</textarea>
-  <textarea id="output"></textarea>
-  <p>If a conversion is missing, let us know by filling out the form at the bottom of the page!</p>
+  <div></div>
 </body>
 <script>
   const volumeUnits = { // unit: ml
     'cup': 236.588,
     'tsp': 4.92892,
     'TBSP': 14.7868,
-    'mL': 1,
-    'L': 1000,
+    'mL|milliliter|mililiter|milileter': 1,
+    'L|liter|leter': 1000,
     'gallon': 3785.41,
     'fl oz': 29.5735,
   };
   const massUnits = { // unit: g
     'oz': 28.3495,
-    'lb': 453.592,
-    'kg': 1000,
+    'lb|pound': 453.592,
+    'kg|kilogram': 1000,
     'mg': 0.001,
+    'g': 1,
   };
   const densityValues = { // g / ml
     '00\' Pizza Flour': 116 / 236.588,
@@ -368,22 +370,57 @@
         value = parseInt(integerResult[1]);
         startIndex = integerResult.index + integerResult[0].length;
       }
-      console.log(value);
-      const noNumber = textLine.substring(startIndex).trim();
+      // console.log(value);
+      const noNumber = textLine.substring(startIndex).trim().toLowerCase();
       // then look for "to"
       const toResult = toRegex.exec(noNumber);
       let endIndex = noNumber.length;
       let toValue = '';
       if (toResult) {
-        toValue = toResult[1];
+        toValue = toResult[1].toLowerCase();
         endIndex = toResult.index;
       }
-      const centerPart = noNumber.substring(0, endIndex).trim();
-      console.log(centerPart);
-      console.log(toValue);
+      const centerPart = noNumber.substring(0, endIndex).trim().toLowerCase();
+      // console.log(centerPart);
+      // console.log(toValue);
       // look for a unit
-
+      // check if there's any mass units in there
+      const frontUnit = matchUnit(centerPart);
+      const backUnit = matchUnit(toValue);
+      console.log(frontUnit);
+      console.log(backUnit);
     }
+  };
+  const matchUnit = (text) => {
+    let matchedUnit = undefined;
+    for (const unit of Object.keys(massUnits)) {
+      const unitRegex = new RegExp('\\b(' + unit.toLowerCase() + ')[es]{0,2}(\\b|$)');
+      if (unitRegex.exec(text)) {
+        matchedUnit = unit;
+      }
+    }
+    for (const unit of Object.keys(volumeUnits)) {
+      const unitRegex = new RegExp('\\b(' + unit.toLowerCase() + ')[es]{0,2}(\\b|$)');
+      if (unitRegex.exec(text)) {
+        matchedUnit = unit;
+      }
+    }
+    for (const food of Object.keys(specialFoodUnits)) {
+      // search for food
+      const foodRegex = new RegExp('\\b(' + food.toLowerCase() + ')[es]{0,2}(\\b|$)');
+      if (foodRegex.exec(text)) {
+        // its that food
+        // console.log(food);
+        // then check for special units
+        for (const specialUnit of Object.keys(specialFoodUnits[food])) {
+          const unitRegex = new RegExp('\\b(' + specialUnit.toLowerCase() + ')[es]{0,2}(\\b|$)');
+          if (unitRegex.exec(text)) {
+            matchedUnit = specialUnit;
+          }
+        }
+      }
+    }
+    return matchedUnit;
   };
 </script>
 
