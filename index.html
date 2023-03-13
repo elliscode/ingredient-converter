@@ -8,345 +8,391 @@
 </head>
 
 <body>
-  <h1>Cooking Calculator</h1>
-  <p>Use natural language to convert your ingredients to other units, or paste an entire recipe!</p>
-  <p>Examples:</p>
-  <blockquote>1 1/2 stick of butter</blockquote>
-  <blockquote>120 ml heavy cream to g</blockquote>
-  <blockquote>5.5 pounds of potatoes to kilograms</blockquote>
-  <blockquote>4 sticks of butter to oz</blockquote>
-  <p>Paste a whole recipe to see the conversions of each ingredient!</p>
-  <textarea id="input" onkeyup="parse()">1 1/2 stick of butter
-120 ml heavy cream to g
-5.5 pounds of potatoes to kilograms
-4 sticks of butter to oz</textarea>
-  <div></div>
+  <header>
+    <h1>Cooking Calculator</h1>
+    <p>Use natural language to convert your ingredients</p>
+  </header>
+  <main>
+    <article>
+      <section>
+        <h2>How does it work?</h2>
+        <p>Simply write in the amount of your ingredient, and what you would like to convert to, and the calculator will take care of the conversion!</p>
+      </section>
+      <section>
+        <textarea style="height:12em;" placeholder="add your ingredients here" id="input" onkeyup="parse()">150 g sugar to cups
+1 1/2 sticks butter to grams
+236 ml milk to cups</textarea>
+      </section>
+      <section id="results"></section>
+    </article>
+  </main>
+  <footer>
+    <p>Written by Daniel Ellis Townsend &mdash; <a href="https://elliscode.com">elliscode.com</a> &mdash; <a
+        href="https://github.com/elliscode">github.com/elliscode</a> </p>
+  </footer>
 </body>
 <script>
-  const volumeUnits = { // unit: ml
-    'cup': 236.588,
-    'tsp': 4.92892,
-    'TBSP': 14.7868,
-    'mL|milliliter|mililiter|milileter': 1,
-    'L|liter|leter': 1000,
-    'gallon': 3785.41,
-    'fl oz': 29.5735,
+  const units = { // unit: ml
+    'cup': { type: 'mL', value: 236.588, displayName: 'cup' },
+    'tsp|teaspoon|tspoon': { type: 'mL', value: 4.92892, displayName: 'tsp' },
+    'TBSP|tablespoon|tbspoon': { type: 'mL', value: 14.78676, displayName: 'TBSP' },
+    'mL|milliliter|mililiter|milileter': { type: 'mL', value: 1, displayName: 'mL' },
+    'L|liter|leter': { type: 'mL', value: 1000, displayName: 'L' },
+    'gal|gallon': { type: 'mL', value: 3785.41, displayName: 'gal' },
+    'fl oz|fl[\\.\\s]*oz': { type: 'mL', value: 29.5735, displayName: 'fl oz' },
+    'oz': { type: 'g', value: 28.3495, displayName: 'oz' },
+    'lb|pound': { type: 'g', value: 453.592, displayName: 'lb' },
+    'kg|kilogram': { type: 'g', value: 1000, displayName: 'kg' },
+    'mg|milligram|miligram': { type: 'g', value: 0.001, displayName: 'mg' },
+    'g|gram': { type: 'g', value: 1, displayName: 'g' },
   };
-  const massUnits = { // unit: g
-    'oz': 28.3495,
-    'lb|pound': 453.592,
-    'kg|kilogram': 1000,
-    'mg': 0.001,
-    'g': 1,
-  };
+  const foodSpecificUnits = {
+    'Butter': { 'stick|stk': { type: 'g', value: 113.398, displayName: 'stick' } },
+  }
   const densityValues = { // g / ml
-    '00\' Pizza Flour': 116 / 236.588,
-    'Agave syrup': 336 / 236.588,
-    'All-Purpose Flour': 120 / 236.588,
-    'Almond Flour': 96 / 236.588,
-    'Almond meal': 84 / 236.588,
-    'Almond paste (packed)': 259 / 236.588,
-    'Almonds (sliced)': 86 / 236.588,
-    'Almonds (slivered)': 114 / 236.588,
-    'Almonds, whole (unblanched)': 142 / 236.588,
-    'Amaranth flour': 103 / 236.588,
-    'Apple juice concentrate': 280 / 236.588,
-    'Apples (dried, diced)': 85 / 236.588,
-    'Apples (peeled, sliced)': 113 / 236.588,
-    'Applesauce': 255 / 236.588,
-    'Apricots (dried, diced)': 128 / 236.588,
-    'Artisan Bread Flour': 120 / 236.588,
-    'Artisan Bread Topping': 172 / 236.588,
-    'Baker\'s Cinnamon Filling': 152 / 236.588,
-    'Baker\'s Fruit Blend': 128 / 236.588,
-    'Baker\'s Special Sugar (superfine sugar, castor sugar)': 190 / 236.588,
-    'Baking powder': 192 / 236.588,
-    'Baking soda': 288 / 236.588,
-    'Baking Sugar Alternative': 170 / 236.588,
-    'Bananas (mashed)': 227 / 236.588,
-    'Barley (cooked)': 215 / 236.588,
-    'Barley (pearled)': 213 / 236.588,
-    'Barley flakes': 92 / 236.588,
-    'Barley flour': 85 / 236.588,
-    'Barley malt syrup': 336 / 236.588,
-    'Basil pesto': 224 / 236.588,
-    'Bell peppers (fresh)': 142 / 236.588,
-    'Berries (frozen)': 142 / 236.588,
-    'Better Cheddar Cheese Powder': 114 / 236.588,
-    'Blueberries (dried)': 156 / 236.588,
-    'Blueberry juice': 241 / 236.588,
-    'Boiled cider': 340 / 236.588,
-    'Bran cereal': 60 / 236.588,
-    'Bread crumbs (dried)': 112 / 236.588,
-    'Bread crumbs (fresh)': 84 / 236.588,
-    'Bread crumbs (Japanese Panko)': 50 / 236.588,
-    'Bread Flour': 120 / 236.588,
-    'Brown rice (cooked)': 170 / 236.588,
-    'Brown rice flour': 128 / 236.588,
-    'Brown sugar (dark or light, packed)': 213 / 236.588,
-    'Buckwheat (whole)': 170 / 236.588,
-    'Buckwheat Flour': 120 / 236.588,
-    'Bulgur': 152 / 236.588,
-    'Butter': 226 / 236.588,
-    'Buttermilk': 227 / 236.588,
-    'Buttermilk powder': 144 / 236.588,
-    'Cacao nibs': 120 / 236.588,
-    'Cake Enhancer': 112 / 236.588,
-    'Candied peel': 170 / 236.588,
-    'Caramel (14-16': 284 / 236.588,
-    'Caramel bits (chopped Heath or toffee)': 156 / 236.588,
-    'Caraway seeds': 144 / 236.588,
-    'Carrots (cooked and puréed)': 256 / 236.588,
-    'Carrots (diced)': 142 / 236.588,
-    'Carrots (grated)': 99 / 236.588,
-    'Cashews (chopped)': 113 / 236.588,
-    'Cashews (whole)': 113 / 236.588,
-    'Celery (diced)': 142 / 236.588,
-    'Cheese (Feta)': 114 / 236.588,
-    'Cheese (grated cheddar, jack, mozzarella, or Swiss)': 113 / 236.588,
-    'Cheese (grated Parmesan)': 100 / 236.588,
-    'Cheese (Ricotta)': 227 / 236.588,
-    'Cherries (candied)': 200 / 236.588,
-    'Cherries (dried)': 142 / 236.588,
-    'Cherries (fresh, pitted, chopped)': 160 / 236.588,
-    'Cherries (frozen)': 113 / 236.588,
-    'Cherry Concentrate': 336 / 236.588,
-    'Chickpea flour': 85 / 236.588,
-    'Chives (fresh)': 42 / 236.588,
-    'Chocolate (chopped)': 170 / 236.588,
-    'Chocolate Chips': 170 / 236.588,
-    'Chocolate Chunks': 170 / 236.588,
-    'Cinnamon Sweet Bits': 140 / 236.588,
-    'Cinnamon-Sugar': 200 / 236.588,
-    'Cocoa (unsweetened)': 84 / 236.588,
-    'Coconut (sweetened, shredded)': 85 / 236.588,
-    'Coconut (toasted)': 85 / 236.588,
-    'Coconut (unsweetened, desiccated)': 85 / 236.588,
-    'Coconut (unsweetened, large flakes)': 60 / 236.588,
-    'Coconut (unsweetened, shredded)': 53 / 236.588,
-    'Coconut cream (unsweetened)': 284 / 236.588,
-    'Coconut Flour': 128 / 236.588,
-    'Coconut milk; canned, well shaken': 241 / 236.588,
-    'Coconut milk (evaporated)': 242 / 236.588,
-    'Coconut Milk Powder': 114 / 236.588,
-    'Coconut oil': 226 / 236.588,
-    'Coconut sugar': 154 / 236.588,
-    'Confectioners\' sugar (unsifted)': 113.5 / 236.588,
-    'Cookie crumbs': 85 / 236.588,
-    'Corn (fresh or frozen)': 152 / 236.588,
-    'Corn (popped)': 5.25 / 236.588,
-    'Corn syrup': 312 / 236.588,
-    'Cornmeal (whole)': 138 / 236.588,
-    'Cornmeal (yellow, Quaker)': 156 / 236.588,
-    'Cornstarch': 112 / 236.588,
-    'Cracked wheat': 149 / 236.588,
-    'Cranberries (dried)': 114 / 236.588,
-    'Cranberries (fresh or frozen)': 99 / 236.588,
-    'Cream (heavy cream, light cream, or half & half)': 227 / 236.588,
-    'Cream cheese': 227 / 236.588,
-    'Cream of coconut': 284 / 236.588,
-    'Crème fraiche': 248 / 236.588,
-    'Crystallized ginger': 184 / 236.588,
-    'Currants': 142 / 236.588,
-    'Dates (chopped)': 149 / 236.588,
-    'Demerara sugar': 220 / 236.588,
-    'Dried Blueberry Powder': 112 / 236.588,
-    'Dried milk (Baker\'s Special Dry Milk)': 112 / 236.588,
-    'Dried nonfat milk (powdered)': 112 / 236.588,
-    'Dried potato flakes (instant mashed potatoes)': 86 / 236.588,
-    'Dried whole milk (powdered)': 100 / 236.588,
-    'Durum Flour': 124 / 236.588,
-    'Easy Roll Dough Improver': 144 / 236.588,
-    'Egg (fresh)': 232.8 / 236.588,
-    'Egg white (fresh)': 223.2 / 236.588,
-    'Egg whites (dried)': 176 / 236.588,
-    'Egg yolk (fresh)': 273.6 / 236.588,
-    'Espresso Powder': 112 / 236.588,
-    'Everything Bagel Topping': 140 / 236.588,
-    'Figs (dried, chopped)': 149 / 236.588,
-    'First Clear Flour': 106 / 236.588,
-    'Flax meal': 100 / 236.588,
-    'Flaxseed': 140 / 236.588,
-    'French-Style Flour': 120 / 236.588,
-    'Fruitcake Fruit Blend': 120 / 236.588,
-    'Garlic (minced)': 224 / 236.588,
-    'Garlic (peeled and sliced)': 149 / 236.588,
-    'Ghee': 176 / 236.588,
-    'Ginger (fresh, sliced)': 228 / 236.588,
-    'Gluten-Free \'00\' Pizza Flour': 100 / 236.588,
-    'Gluten-Free All-Purpose Baking Mix': 120 / 236.588,
-    'Gluten-Free All-Purpose Flour': 156 / 236.588,
-    'Gluten-Free Bread Flour': 120 / 236.588,
-    'Gluten-Free Measure for Measure Flour': 120 / 236.588,
-    'Glutinous rice flour': 120 / 236.588,
-    'Graham cracker crumbs (boxed)': 99 / 236.588,
-    'Graham crackers (crushed)': 142 / 236.588,
-    'Granola': 113 / 236.588,
-    'Grape Nuts': 114 / 236.588,
-    'Harvest Grains Blend': 148 / 236.588,
-    'Hazelnut flour': 89 / 236.588,
-    'Hazelnut Praline Paste': 312 / 236.588,
-    'Hazelnut spread': 320 / 236.588,
-    'Hazelnuts (whole)': 142 / 236.588,
-    'Hi-Maize Natural Fiber': 128 / 236.588,
-    'High-Gluten Flour': 120 / 236.588,
-    'Honey': 336 / 236.588,
-    'Instant ClearJel': 176 / 236.588,
-    'Irish-Style Flour': 110 / 236.588,
-    'Italian-Style Flour': 106 / 236.588,
-    'Jam or preserves': 340 / 236.588,
-    'Jammy Bits': 184 / 236.588,
-    'Keto Wheat Flour': 120 / 236.588,
-    'Keto Wheat Pizza Crust Mix': 110 / 236.588,
-    'Key Lime Juice': 227 / 236.588,
-    'Lard': 226 / 236.588,
-    'Leeks (diced)': 92 / 236.588,
-    'Lemon Crumbles': 180 / 236.588,
-    'Lemon juice': 224 / 236.588,
-    'Lemon Juice Powder': 144 / 236.588,
-    'Lime Juice Powder': 144 / 236.588,
-    'Macadamia nuts (whole)': 149 / 236.588,
-    'Malt syrup': 344 / 236.588,
-    'Malted Milk Powder': 140 / 236.588,
-    'Malted Wheat Flakes': 128 / 236.588,
-    'Maple sugar': 156 / 236.588,
-    'Maple syrup': 312 / 236.588,
-    'Marshmallow spread, homemade': 72 / 236.588,
-    'Marshmallow spread, store-bought': 123 / 236.588,
-    'Marshmallow Fluff®': 128 / 236.588,
-    'Marshmallows (mini)': 43 / 236.588,
-    'Marzipan': 290 / 236.588,
-    'Masa Harina': 93 / 236.588,
-    'Mascarpone cheese': 227 / 236.588,
-    'Mashed potatoes': 213 / 236.588,
-    'Mashed sweet potatoes': 240 / 236.588,
-    'Mayonnaise': 226 / 236.588,
-    'Medium Rye Flour': 106 / 236.588,
-    'Meringue powder': 172 / 236.588,
-    'Milk (evaporated)': 226 / 236.588,
-    'Milk (fresh)': 227 / 236.588,
-    'Millet (whole)': 206 / 236.588,
-    'Mini chocolate chips': 177 / 236.588,
-    'Molasses': 340 / 236.588,
-    'Mushrooms (sliced)': 78 / 236.588,
-    'Non-Diastatic Malt Powder': 144 / 236.588,
-    'Oat bran': 106 / 236.588,
-    'Oat flour': 92 / 236.588,
-    'Oats (old-fashioned or quick-cooking)': 89 / 236.588,
-    'Oats (prepared)': 147 / 236.588,
-    'Olive oil': 200 / 236.588,
-    'Olives (sliced)': 142 / 236.588,
-    'Onions (fresh, diced)': 142 / 236.588,
-    'Paleo Baking Flour': 104 / 236.588,
-    'Palm shortening': 180 / 236.588,
-    'Passion fruit purée': 180 / 236.588,
-    'Pasta Flour Blend': 145 / 236.588,
-    'Pastry Flour': 106 / 236.588,
-    'Pastry Flour Blend': 113 / 236.588,
-    'Peaches (peeled and diced)': 170 / 236.588,
-    'Peanut butter': 270 / 236.588,
-    'Peanuts (whole, shelled)': 142 / 236.588,
-    'Pears (peeled and diced)': 163 / 236.588,
-    'Pecan Meal': 80 / 236.588,
-    'Pecans (diced)': 114 / 236.588,
-    'Pie Filling Enhancer': 184 / 236.588,
-    'Pine nuts': 142 / 236.588,
-    'Pineapple (crushed, drained)': 256 / 236.588,
-    'Pineapple (dried)': 142 / 236.588,
-    'Pineapple (fresh or canned, diced)': 170 / 236.588,
-    'Pistachio nuts (shelled)': 120 / 236.588,
-    'Pistachio Paste': 312 / 236.588,
-    'Pizza Dough Flavor': 96 / 236.588,
-    'Pizza Flour Blend': 124 / 236.588,
-    'Pizza sauce': 228 / 236.588,
-    'Pizza Seasoning': 80 / 236.588,
-    'Polenta (coarse ground cornmeal)': 163 / 236.588,
-    'Poppy seeds': 144 / 236.588,
-    'Potato Flour': 184 / 236.588,
-    'Potato starch': 152 / 236.588,
-    'Pumpernickel Flour': 106 / 236.588,
-    'Pumpkin purée': 227 / 236.588,
-    'Quinoa (cooked)': 184 / 236.588,
-    'Quinoa (whole)': 177 / 236.588,
-    'Quinoa flour': 110 / 236.588,
-    'Raisins (loose)': 149 / 236.588,
-    'Raisins (packed)': 170 / 236.588,
-    'Raspberries (fresh)': 120 / 236.588,
-    'Rhubarb (sliced, 1/2" slices)': 120 / 236.588,
-    'Rice (long grain, dry)': 198 / 236.588,
-    'Rice flour (white)': 142 / 236.588,
-    'Rice Krispies': 28 / 236.588,
-    'Rye Bread Improver': 112 / 236.588,
-    'Rye Chops': 120 / 236.588,
-    'Rye flakes': 124 / 236.588,
-    'Rye Flour Blend': 106 / 236.588,
-    'Salt (Kosher, Diamond Crystal)': 128 / 236.588,
-    'Salt (Kosher, Morton\'s)': 256 / 236.588,
-    'Salt (table)': 288 / 236.588,
-    'Scallions (sliced)': 64 / 236.588,
-    'Self-Rising Flour': 113 / 236.588,
-    'Semolina Flour': 163 / 236.588,
-    'Sesame seeds': 142 / 236.588,
-    'Shallots (peeled and sliced)': 156 / 236.588,
-    'Six-Grain Blend': 128 / 236.588,
-    'Snow White Non-Melting Topping Sugar': 114 / 236.588,
-    'Sorghum flour': 138 / 236.588,
-    'Sour cream': 227 / 236.588,
-    'Soy flour': 140 / 236.588,
-    'Sparkling Sugar': 228 / 236.588,
-    'Spelt Flour': 99 / 236.588,
-    'Sprouted Wheat Flour': 113 / 236.588,
-    'Steel cut oats': 140 / 236.588,
-    'Sticky Bun Sugar': 99 / 236.588,
-    'Strawberries (fresh sliced)': 167 / 236.588,
-    'Sugar (granulated white)': 198 / 236.588,
-    'Sugar substitute (Splenda)': 25 / 236.588,
-    'Sundried tomatoes (dry pack)': 170 / 236.588,
-    'Sunflower seeds': 140 / 236.588,
-    'Super 10 Blend': 106 / 236.588,
-    'Swedish Pearl Sugar': 196 / 236.588,
-    'Sweet Ground Chocolate and Cocoa Blend': 112 / 236.588,
-    'Sweetened condensed coconut milk': 288 / 236.588,
-    'Sweetened condensed milk': 312 / 236.588,
-    'Tahini paste': 256 / 236.588,
-    'Tapioca starch or flour': 113 / 236.588,
-    'Tapioca (quick cooking)': 168 / 236.588,
-    'Teff flour': 135 / 236.588,
-    'The Works Bread Topping': 140 / 236.588,
-    'Toasted Almond Flour': 96 / 236.588,
-    'Toffee chunks': 156 / 236.588,
-    'Tomato paste': 232 / 236.588,
-    'Turbinado sugar (raw)': 180 / 236.588,
-    'Unbleached Cake Flour': 120 / 236.588,
-    'Vanilla Extract': 224 / 236.588,
-    'Vegetable oil': 198 / 236.588,
-    'Vegetable shortening': 184 / 236.588,
-    'Vital Wheat Gluten': 144 / 236.588,
-    'Walnuts (chopped)': 113 / 236.588,
-    'Walnuts (whole)': 128 / 236.588,
-    'Water': 1,
-    'Wheat berries (red)': 184 / 236.588,
-    'Wheat bran': 64 / 236.588,
-    'Wheat germ': 112 / 236.588,
-    'White Chocolate Chips': 170 / 236.588,
-    'White Rye Flour': 106 / 236.588,
-    'White Whole Wheat Flour': 113 / 236.588,
-    'Whole Grain Flour Blend': 113 / 236.588,
-    'Whole Wheat Flour (Premium 100%)': 113 / 236.588,
-    'Whole Wheat Pastry Flour / Graham Flour': 96 / 236.588,
-    'Yeast (instant)': 144 / 236.588,
-    'Yeast (instant)': 149.3333333 / 236.588,
-    'Yeast (instant)': 144 / 236.588,
-    'Yogurt': 227 / 236.588,
-  };
-  const specialFoodUnits = { // g
-    'butter': { 'stick': 113 },
+    '00\' Pizza Flour': { displayName: '00\' Pizza Flour', density: 116 / 236.588 },
+    'Agave syrup': { displayName: 'Agave syrup', density: 336 / 236.588 },
+    'all[\\-\\s]purpose flour|flour|All-Purpose Flour': { displayName: 'All-Purpose Flour', density: 120 / 236.588 },
+    'Almond Flour': { displayName: 'Almond Flour', density: 96 / 236.588 },
+    'Almond meal': { displayName: 'Almond meal', density: 84 / 236.588 },
+    'Almond paste, packed': { displayName: 'Almond paste, packed', density: 259 / 236.588 },
+    'Almonds, sliced': { displayName: 'Almonds, sliced', density: 86 / 236.588 },
+    'Almonds, slivered': { displayName: 'Almonds, slivered', density: 114 / 236.588 },
+    'Almonds, whole, unblanched': { displayName: 'Almonds, whole, unblanched', density: 142 / 236.588 },
+    'Amaranth flour': { displayName: 'Amaranth flour', density: 103 / 236.588 },
+    'Apple juice concentrate': { displayName: 'Apple juice concentrate', density: 280 / 236.588 },
+    'Apples, dried, diced': { displayName: 'Apples, dried, diced', density: 85 / 236.588 },
+    'Apples, peeled, sliced': { displayName: 'Apples, peeled, sliced', density: 113 / 236.588 },
+    'Applesauce': { displayName: 'Applesauce', density: 255 / 236.588 },
+    'Apricots, dried, diced': { displayName: 'Apricots, dried, diced', density: 128 / 236.588 },
+    'Artisan Bread Flour': { displayName: 'Artisan Bread Flour', density: 120 / 236.588 },
+    'Artisan Bread Topping': { displayName: 'Artisan Bread Topping', density: 172 / 236.588 },
+    'Baker\'s Cinnamon Filling': { displayName: 'Baker\'s Cinnamon Filling', density: 152 / 236.588 },
+    'Baker\'s Fruit Blend': { displayName: 'Baker\'s Fruit Blend', density: 128 / 236.588 },
+    'Baker\'s Special Sugar, superfine sugar, castor sugar': { displayName: 'Baker\'s Special Sugar, superfine sugar, castor sugar', density: 190 / 236.588 },
+    'Baking powder': { displayName: 'Baking powder', density: 192 / 236.588 },
+    'Baking soda': { displayName: 'Baking soda', density: 288 / 236.588 },
+    'Baking Sugar Alternative': { displayName: 'Baking Sugar Alternative', density: 170 / 236.588 },
+    'Bananas, mashed': { displayName: 'Bananas, mashed', density: 227 / 236.588 },
+    'Barley, cooked': { displayName: 'Barley, cooked', density: 215 / 236.588 },
+    'Barley, pearled': { displayName: 'Barley, pearled', density: 213 / 236.588 },
+    'Barley flakes': { displayName: 'Barley flakes', density: 92 / 236.588 },
+    'Barley flour': { displayName: 'Barley flour', density: 85 / 236.588 },
+    'Barley malt syrup': { displayName: 'Barley malt syrup', density: 336 / 236.588 },
+    'Basil pesto': { displayName: 'Basil pesto', density: 224 / 236.588 },
+    'Bell peppers, fresh': { displayName: 'Bell peppers, fresh', density: 142 / 236.588 },
+    'Berries, frozen': { displayName: 'Berries, frozen', density: 142 / 236.588 },
+    'Better Cheddar Cheese Powder': { displayName: 'Better Cheddar Cheese Powder', density: 114 / 236.588 },
+    'Blueberries, dried': { displayName: 'Blueberries, dried', density: 156 / 236.588 },
+    'Blueberry juice': { displayName: 'Blueberry juice', density: 241 / 236.588 },
+    'Boiled cider': { displayName: 'Boiled cider', density: 340 / 236.588 },
+    'Bran cereal': { displayName: 'Bran cereal', density: 60 / 236.588 },
+    'Bread crumbs, dried': { displayName: 'Bread crumbs, dried', density: 112 / 236.588 },
+    'Bread crumbs, fresh': { displayName: 'Bread crumbs, fresh', density: 84 / 236.588 },
+    'Bread crumbs, Japanese Panko': { displayName: 'Bread crumbs, Japanese Panko', density: 50 / 236.588 },
+    'Bread Flour': { displayName: 'Bread Flour', density: 120 / 236.588 },
+    'Brown rice, cooked': { displayName: 'Brown rice, cooked', density: 170 / 236.588 },
+    'Brown rice flour': { displayName: 'Brown rice flour', density: 128 / 236.588 },
+    'Brown sugar, dark or light, packed': { displayName: 'Brown sugar, dark or light, packed', density: 213 / 236.588 },
+    'Buckwheat, whole': { displayName: 'Buckwheat, whole', density: 170 / 236.588 },
+    'Buckwheat Flour': { displayName: 'Buckwheat Flour', density: 120 / 236.588 },
+    'Bulgur': { displayName: 'Bulgur', density: 152 / 236.588 },
+    'Butter': { displayName: 'Butter', density: 226 / 236.588 },
+    'Buttermilk': { displayName: 'Buttermilk', density: 227 / 236.588 },
+    'Buttermilk powder': { displayName: 'Buttermilk powder', density: 144 / 236.588 },
+    'Cacao nibs': { displayName: 'Cacao nibs', density: 120 / 236.588 },
+    'Cake Enhancer': { displayName: 'Cake Enhancer', density: 112 / 236.588 },
+    'Candied peel': { displayName: 'Candied peel', density: 170 / 236.588 },
+    'Caramel': { displayName: 'Caramel', density: 284 / 236.588 },
+    'Caramel bits, chopped Heath or toffee': { displayName: 'Caramel bits, chopped Heath or toffee', density: 156 / 236.588 },
+    'Caraway seeds': { displayName: 'Caraway seeds', density: 144 / 236.588 },
+    'Carrots, cooked and puréed': { displayName: 'Carrots, cooked and puréed', density: 256 / 236.588 },
+    'Carrots, diced': { displayName: 'Carrots, diced', density: 142 / 236.588 },
+    'Carrots, grated': { displayName: 'Carrots, grated', density: 99 / 236.588 },
+    'Cashews, chopped': { displayName: 'Cashews, chopped', density: 113 / 236.588 },
+    'Cashews, whole': { displayName: 'Cashews, whole', density: 113 / 236.588 },
+    'Celery, diced': { displayName: 'Celery, diced', density: 142 / 236.588 },
+    'Cheese, Feta': { displayName: 'Cheese, Feta', density: 114 / 236.588 },
+    'Cheese, grated cheddar, jack, mozzarella, or Swiss': { displayName: 'Cheese, grated cheddar, jack, mozzarella, or Swiss', density: 113 / 236.588 },
+    'Cheese, grated Parmesan': { displayName: 'Cheese, grated Parmesan', density: 100 / 236.588 },
+    'Cheese, Ricotta': { displayName: 'Cheese, Ricotta', density: 227 / 236.588 },
+    'Cherries, candied': { displayName: 'Cherries, candied', density: 200 / 236.588 },
+    'Cherries, dried': { displayName: 'Cherries, dried', density: 142 / 236.588 },
+    'Cherries, fresh, pitted, chopped': { displayName: 'Cherries, fresh, pitted, chopped', density: 160 / 236.588 },
+    'Cherries, frozen': { displayName: 'Cherries, frozen', density: 113 / 236.588 },
+    'Cherry Concentrate': { displayName: 'Cherry Concentrate', density: 336 / 236.588 },
+    'Chickpea flour': { displayName: 'Chickpea flour', density: 85 / 236.588 },
+    'Chives': { displayName: 'Chives', density: 42 / 236.588 },
+    'Chocolate': { displayName: 'Chocolate', density: 170 / 236.588 },
+    'Chocolate Chips': { displayName: 'Chocolate Chips', density: 170 / 236.588 },
+    'Chocolate Chunks': { displayName: 'Chocolate Chunks', density: 170 / 236.588 },
+    'Cinnamon Sweet Bits': { displayName: 'Cinnamon Sweet Bits', density: 140 / 236.588 },
+    'Cinnamon-Sugar': { displayName: 'Cinnamon-Sugar', density: 200 / 236.588 },
+    'Cocoa': { displayName: 'Cocoa', density: 84 / 236.588 },
+    'toasted Coconut': { displayName: 'toasted Coconut', density: 85 / 236.588 },
+    'desiccated Coconut': { displayName: 'desiccated Coconut', density: 85 / 236.588 },
+    'Coconut flakes': { displayName: 'Coconut flakes', density: 60 / 236.588 },
+    'shredded Coconut': { displayName: 'shredded Coconut', density: 53 / 236.588 },
+    'Coconut cream': { displayName: 'Coconut cream', density: 284 / 236.588 },
+    'Coconut Flour': { displayName: 'Coconut Flour', density: 128 / 236.588 },
+    'Coconut milk; canned, well shaken': { displayName: 'Coconut milk; canned, well shaken', density: 241 / 236.588 },
+    'Coconut milk, evaporated': { displayName: 'Coconut milk, evaporated', density: 242 / 236.588 },
+    'Coconut Milk Powder': { displayName: 'Coconut Milk Powder', density: 114 / 236.588 },
+    'Coconut oil': { displayName: 'Coconut oil', density: 226 / 236.588 },
+    'Coconut sugar': { displayName: 'Coconut sugar', density: 154 / 236.588 },
+    'powdered sugar|Confectioner[\'s]* sugar': { displayName: 'Powdered Sugar', density: 113.5 / 236.588 },
+    'Cookie crumbs': { displayName: 'Cookie crumbs', density: 85 / 236.588 },
+    'Corn, fresh or frozen': { displayName: 'Corn, fresh or frozen', density: 152 / 236.588 },
+    'Corn, popped': { displayName: 'Corn, popped', density: 5.25 / 236.588 },
+    'Corn syrup': { displayName: 'Corn syrup', density: 312 / 236.588 },
+    'Cornmeal, whole': { displayName: 'Cornmeal, whole', density: 138 / 236.588 },
+    'Cornmeal, yellow, Quaker': { displayName: 'Cornmeal, yellow, Quaker', density: 156 / 236.588 },
+    'Cornstarch': { displayName: 'Cornstarch', density: 112 / 236.588 },
+    'Cracked wheat': { displayName: 'Cracked wheat', density: 149 / 236.588 },
+    'Cranberries, dried': { displayName: 'Cranberries, dried', density: 114 / 236.588 },
+    'Cranberries, fresh or frozen': { displayName: 'Cranberries, fresh or frozen', density: 99 / 236.588 },
+    'heavy cream': { displayName: 'Heavy Cream', density: 227 / 236.588 },
+    'light cream': { displayName: 'Light Cream', density: 227 / 236.588 },
+    'cream': { displayName: 'Cream', density: 227 / 236.588 },
+    'half and half|half[\\s&]*half': { displayName: 'Half & Half', density: 227 / 236.588 },
+    'Cream cheese': { displayName: 'Cream cheese', density: 227 / 236.588 },
+    'Cream of coconut': { displayName: 'Cream of coconut', density: 284 / 236.588 },
+    'Crème fraiche': { displayName: 'Crème fraiche', density: 248 / 236.588 },
+    'Crystallized ginger': { displayName: 'Crystallized ginger', density: 184 / 236.588 },
+    'Currants': { displayName: 'Currants', density: 142 / 236.588 },
+    'Dates, chopped': { displayName: 'Dates, chopped', density: 149 / 236.588 },
+    'Demerara sugar': { displayName: 'Demerara sugar', density: 220 / 236.588 },
+    'Dried Blueberry Powder': { displayName: 'Dried Blueberry Powder', density: 112 / 236.588 },
+    'Dried milk, Baker\'s Special Dry Milk': { displayName: 'Dried milk, Baker\'s Special Dry Milk', density: 112 / 236.588 },
+    'Dried nonfat milk, powdered': { displayName: 'Dried nonfat milk, powdered', density: 112 / 236.588 },
+    'Dried potato flakes, instant mashed potatoes': { displayName: 'Dried potato flakes, instant mashed potatoes', density: 86 / 236.588 },
+    'Dried whole milk, powdered': { displayName: 'Dried whole milk, powdered', density: 100 / 236.588 },
+    'Durum Flour': { displayName: 'Durum Flour', density: 124 / 236.588 },
+    'Easy Roll Dough Improver': { displayName: 'Easy Roll Dough Improver', density: 144 / 236.588 },
+    'Egg': { displayName: 'Eggs', density: 232.8 / 236.588 },
+    'Egg white': { displayName: 'Egg whites', density: 223.2 / 236.588 },
+    'Egg white powder': { displayName: 'Egg White Powder', density: 176 / 236.588 },
+    'Egg yolk': { displayName: 'Egg yolks', density: 273.6 / 236.588 },
+    'Espresso Powder': { displayName: 'Espresso Powder', density: 112 / 236.588 },
+    'Everything Bagel Topping': { displayName: 'Everything Bagel Topping', density: 140 / 236.588 },
+    'Figs, dried, chopped': { displayName: 'Figs, dried, chopped', density: 149 / 236.588 },
+    'First Clear Flour': { displayName: 'First Clear Flour', density: 106 / 236.588 },
+    'Flax meal': { displayName: 'Flax meal', density: 100 / 236.588 },
+    'Flaxseed': { displayName: 'Flaxseed', density: 140 / 236.588 },
+    'French-Style Flour': { displayName: 'French-Style Flour', density: 120 / 236.588 },
+    'Fruitcake Fruit Blend': { displayName: 'Fruitcake Fruit Blend', density: 120 / 236.588 },
+    'Garlic, minced': { displayName: 'Garlic, minced', density: 224 / 236.588 },
+    'Garlic, peeled and sliced': { displayName: 'Garlic, peeled and sliced', density: 149 / 236.588 },
+    'Ghee': { displayName: 'Ghee', density: 176 / 236.588 },
+    'Ginger, fresh, sliced': { displayName: 'Ginger, fresh, sliced', density: 228 / 236.588 },
+    'Gluten-Free \'00\' Pizza Flour': { displayName: 'Gluten-Free \'00\' Pizza Flour', density: 100 / 236.588 },
+    'Gluten-Free All-Purpose Baking Mix': { displayName: 'Gluten-Free All-Purpose Baking Mix', density: 120 / 236.588 },
+    'Gluten-Free All-Purpose Flour': { displayName: 'Gluten-Free All-Purpose Flour', density: 156 / 236.588 },
+    'Gluten-Free Bread Flour': { displayName: 'Gluten-Free Bread Flour', density: 120 / 236.588 },
+    'Gluten-Free Measure for Measure Flour': { displayName: 'Gluten-Free Measure for Measure Flour', density: 120 / 236.588 },
+    'Glutinous rice flour': { displayName: 'Glutinous rice flour', density: 120 / 236.588 },
+    'Graham cracker crumbs, boxed': { displayName: 'Graham cracker crumbs, boxed', density: 99 / 236.588 },
+    'Graham crackers, crushed': { displayName: 'Graham crackers, crushed', density: 142 / 236.588 },
+    'Granola': { displayName: 'Granola', density: 113 / 236.588 },
+    'Grape Nuts': { displayName: 'Grape Nuts', density: 114 / 236.588 },
+    'Harvest Grains Blend': { displayName: 'Harvest Grains Blend', density: 148 / 236.588 },
+    'Hazelnut flour': { displayName: 'Hazelnut flour', density: 89 / 236.588 },
+    'Hazelnut Praline Paste': { displayName: 'Hazelnut Praline Paste', density: 312 / 236.588 },
+    'Hazelnut spread': { displayName: 'Hazelnut spread', density: 320 / 236.588 },
+    'Hazelnuts, whole': { displayName: 'Hazelnuts, whole', density: 142 / 236.588 },
+    'Hi-Maize Natural Fiber': { displayName: 'Hi-Maize Natural Fiber', density: 128 / 236.588 },
+    'High-Gluten Flour': { displayName: 'High-Gluten Flour', density: 120 / 236.588 },
+    'Honey': { displayName: 'Honey', density: 336 / 236.588 },
+    'Instant ClearJel': { displayName: 'Instant ClearJel', density: 176 / 236.588 },
+    'Irish-Style Flour': { displayName: 'Irish-Style Flour', density: 110 / 236.588 },
+    'Italian-Style Flour': { displayName: 'Italian-Style Flour', density: 106 / 236.588 },
+    'Jam or preserves': { displayName: 'Jam or preserves', density: 340 / 236.588 },
+    'Jammy Bits': { displayName: 'Jammy Bits', density: 184 / 236.588 },
+    'Keto Wheat Flour': { displayName: 'Keto Wheat Flour', density: 120 / 236.588 },
+    'Keto Wheat Pizza Crust Mix': { displayName: 'Keto Wheat Pizza Crust Mix', density: 110 / 236.588 },
+    'Key Lime Juice': { displayName: 'Key Lime Juice', density: 227 / 236.588 },
+    'Lard': { displayName: 'Lard', density: 226 / 236.588 },
+    'Leeks, diced': { displayName: 'Leeks, diced', density: 92 / 236.588 },
+    'Lemon Crumbles': { displayName: 'Lemon Crumbles', density: 180 / 236.588 },
+    'Lemon juice': { displayName: 'Lemon juice', density: 224 / 236.588 },
+    'Lemon Juice Powder': { displayName: 'Lemon Juice Powder', density: 144 / 236.588 },
+    'Lime Juice Powder': { displayName: 'Lime Juice Powder', density: 144 / 236.588 },
+    'Macadamia nuts, whole': { displayName: 'Macadamia nuts, whole', density: 149 / 236.588 },
+    'Malt syrup': { displayName: 'Malt syrup', density: 344 / 236.588 },
+    'Malted Milk Powder': { displayName: 'Malted Milk Powder', density: 140 / 236.588 },
+    'Malted Wheat Flakes': { displayName: 'Malted Wheat Flakes', density: 128 / 236.588 },
+    'Maple sugar': { displayName: 'Maple sugar', density: 156 / 236.588 },
+    'Maple syrup': { displayName: 'Maple syrup', density: 312 / 236.588 },
+    'Marshmallow spread, homemade': { displayName: 'Marshmallow spread, homemade', density: 72 / 236.588 },
+    'Marshmallow spread, store-bought': { displayName: 'Marshmallow spread, store-bought', density: 123 / 236.588 },
+    'Marshmallow Fluff®': { displayName: 'Marshmallow Fluff®', density: 128 / 236.588 },
+    'Marshmallows, mini': { displayName: 'Marshmallows, mini', density: 43 / 236.588 },
+    'Marzipan': { displayName: 'Marzipan', density: 290 / 236.588 },
+    'Masa Harina': { displayName: 'Masa Harina', density: 93 / 236.588 },
+    'Mascarpone cheese': { displayName: 'Mascarpone cheese', density: 227 / 236.588 },
+    'Mashed potatoes': { displayName: 'Mashed potatoes', density: 213 / 236.588 },
+    'Mashed sweet potatoes': { displayName: 'Mashed sweet potatoes', density: 240 / 236.588 },
+    'Mayonnaise': { displayName: 'Mayonnaise', density: 226 / 236.588 },
+    'Medium Rye Flour': { displayName: 'Medium Rye Flour', density: 106 / 236.588 },
+    'Meringue powder': { displayName: 'Meringue powder', density: 172 / 236.588 },
+    'Milk, evaporated': { displayName: 'Milk, evaporated', density: 226 / 236.588 },
+    'whole milk|milk': { displayName: 'Milk', density: 227 / 236.588 },
+    'Millet, whole': { displayName: 'Millet, whole', density: 206 / 236.588 },
+    'Mini chocolate chips': { displayName: 'Mini chocolate chips', density: 177 / 236.588 },
+    'Molasses': { displayName: 'Molasses', density: 340 / 236.588 },
+    'Mushrooms, sliced': { displayName: 'Mushrooms, sliced', density: 78 / 236.588 },
+    'Non-Diastatic Malt Powder': { displayName: 'Non-Diastatic Malt Powder', density: 144 / 236.588 },
+    'Oat bran': { displayName: 'Oat bran', density: 106 / 236.588 },
+    'Oat flour': { displayName: 'Oat flour', density: 92 / 236.588 },
+    'Oats, old-fashioned or quick-cooking': { displayName: 'Oats, old-fashioned or quick-cooking', density: 89 / 236.588 },
+    'Oats, prepared': { displayName: 'Oats, prepared', density: 147 / 236.588 },
+    'Olive oil': { displayName: 'Olive oil', density: 200 / 236.588 },
+    'Olives, sliced': { displayName: 'Olives, sliced', density: 142 / 236.588 },
+    'Onions, fresh, diced': { displayName: 'Onions, fresh, diced', density: 142 / 236.588 },
+    'Paleo Baking Flour': { displayName: 'Paleo Baking Flour', density: 104 / 236.588 },
+    'Palm shortening': { displayName: 'Palm shortening', density: 180 / 236.588 },
+    'Passion fruit purée': { displayName: 'Passion fruit purée', density: 180 / 236.588 },
+    'Pasta Flour Blend': { displayName: 'Pasta Flour Blend', density: 145 / 236.588 },
+    'Pastry Flour': { displayName: 'Pastry Flour', density: 106 / 236.588 },
+    'Pastry Flour Blend': { displayName: 'Pastry Flour Blend', density: 113 / 236.588 },
+    'Peaches, peeled and diced': { displayName: 'Peaches, peeled and diced', density: 170 / 236.588 },
+    'Peanut butter': { displayName: 'Peanut butter', density: 270 / 236.588 },
+    'Peanuts, whole, shelled': { displayName: 'Peanuts, whole, shelled', density: 142 / 236.588 },
+    'Pears, peeled and diced': { displayName: 'Pears, peeled and diced', density: 163 / 236.588 },
+    'Pecan Meal': { displayName: 'Pecan Meal', density: 80 / 236.588 },
+    'Pecans, diced': { displayName: 'Pecans, diced', density: 114 / 236.588 },
+    'Pie Filling Enhancer': { displayName: 'Pie Filling Enhancer', density: 184 / 236.588 },
+    'Pine nuts': { displayName: 'Pine nuts', density: 142 / 236.588 },
+    'Pineapple, crushed, drained': { displayName: 'Pineapple, crushed, drained', density: 256 / 236.588 },
+    'Pineapple, dried': { displayName: 'Pineapple, dried', density: 142 / 236.588 },
+    'Pineapple, fresh or canned, diced': { displayName: 'Pineapple, fresh or canned, diced', density: 170 / 236.588 },
+    'Pistachio nuts, shelled': { displayName: 'Pistachio nuts, shelled', density: 120 / 236.588 },
+    'Pistachio Paste': { displayName: 'Pistachio Paste', density: 312 / 236.588 },
+    'Pizza Dough Flavor': { displayName: 'Pizza Dough Flavor', density: 96 / 236.588 },
+    'Pizza Flour Blend': { displayName: 'Pizza Flour Blend', density: 124 / 236.588 },
+    'Pizza sauce': { displayName: 'Pizza sauce', density: 228 / 236.588 },
+    'Pizza Seasoning': { displayName: 'Pizza Seasoning', density: 80 / 236.588 },
+    'Polenta, coarse ground cornmeal': { displayName: 'Polenta, coarse ground cornmeal', density: 163 / 236.588 },
+    'Poppy seeds': { displayName: 'Poppy seeds', density: 144 / 236.588 },
+    'Potato Flour': { displayName: 'Potato Flour', density: 184 / 236.588 },
+    'Potato starch': { displayName: 'Potato starch', density: 152 / 236.588 },
+    'Pumpernickel Flour': { displayName: 'Pumpernickel Flour', density: 106 / 236.588 },
+    'Pumpkin purée': { displayName: 'Pumpkin purée', density: 227 / 236.588 },
+    'Quinoa, cooked': { displayName: 'Quinoa, cooked', density: 184 / 236.588 },
+    'Quinoa, whole': { displayName: 'Quinoa, whole', density: 177 / 236.588 },
+    'Quinoa flour': { displayName: 'Quinoa flour', density: 110 / 236.588 },
+    'Raisins, loose': { displayName: 'Raisins, loose', density: 149 / 236.588 },
+    'Raisins, packed': { displayName: 'Raisins, packed', density: 170 / 236.588 },
+    'Raspberries, fresh': { displayName: 'Raspberries, fresh', density: 120 / 236.588 },
+    'Rhubarb, sliced, 1/2" slices': { displayName: 'Rhubarb, sliced, 1/2" slices', density: 120 / 236.588 },
+    'Rice, long grain, dry': { displayName: 'Rice, long grain, dry', density: 198 / 236.588 },
+    'Rice flour, white': { displayName: 'Rice flour, white', density: 142 / 236.588 },
+    'Rice Krispies': { displayName: 'Rice Krispies', density: 28 / 236.588 },
+    'Rye Bread Improver': { displayName: 'Rye Bread Improver', density: 112 / 236.588 },
+    'Rye Chops': { displayName: 'Rye Chops', density: 120 / 236.588 },
+    'Rye flakes': { displayName: 'Rye flakes', density: 124 / 236.588 },
+    'Rye Flour Blend': { displayName: 'Rye Flour Blend', density: 106 / 236.588 },
+    'Salt, Kosher, Diamond Crystal': { displayName: 'Salt, Kosher, Diamond Crystal', density: 128 / 236.588 },
+    'Salt, Kosher, Morton\'s': { displayName: 'Salt, Kosher, Morton\'s', density: 256 / 236.588 },
+    'Salt, table': { displayName: 'Salt, table', density: 288 / 236.588 },
+    'Scallions, sliced': { displayName: 'Scallions, sliced', density: 64 / 236.588 },
+    'Self-Rising Flour': { displayName: 'Self-Rising Flour', density: 113 / 236.588 },
+    'Semolina Flour': { displayName: 'Semolina Flour', density: 163 / 236.588 },
+    'Sesame seeds': { displayName: 'Sesame seeds', density: 142 / 236.588 },
+    'Shallots, peeled and sliced': { displayName: 'Shallots, peeled and sliced', density: 156 / 236.588 },
+    'Six-Grain Blend': { displayName: 'Six-Grain Blend', density: 128 / 236.588 },
+    'Snow White Non-Melting Topping Sugar': { displayName: 'Snow White Non-Melting Topping Sugar', density: 114 / 236.588 },
+    'Sorghum flour': { displayName: 'Sorghum flour', density: 138 / 236.588 },
+    'Sour cream': { displayName: 'Sour cream', density: 227 / 236.588 },
+    'Soy flour': { displayName: 'Soy flour', density: 140 / 236.588 },
+    'Sparkling Sugar': { displayName: 'Sparkling Sugar', density: 228 / 236.588 },
+    'Spelt Flour': { displayName: 'Spelt Flour', density: 99 / 236.588 },
+    'Sprouted Wheat Flour': { displayName: 'Sprouted Wheat Flour', density: 113 / 236.588 },
+    'Steel cut oats': { displayName: 'Steel cut oats', density: 140 / 236.588 },
+    'Sticky Bun Sugar': { displayName: 'Sticky Bun Sugar', density: 99 / 236.588 },
+    'Strawberries, fresh sliced': { displayName: 'Strawberries, fresh sliced', density: 167 / 236.588 },
+    'sugar|White Sugar|granulated sugar': { displayName: 'sugar', density: 200 / 236.588 },
+    'Sugar substitute, Splenda': { displayName: 'Sugar substitute, Splenda', density: 25 / 236.588 },
+    'Sundried tomatoes, dry pack': { displayName: 'Sundried tomatoes, dry pack', density: 170 / 236.588 },
+    'Sunflower seeds': { displayName: 'Sunflower seeds', density: 140 / 236.588 },
+    'Super 10 Blend': { displayName: 'Super 10 Blend', density: 106 / 236.588 },
+    'Swedish Pearl Sugar': { displayName: 'Swedish Pearl Sugar', density: 196 / 236.588 },
+    'Sweet Ground Chocolate and Cocoa Blend': { displayName: 'Sweet Ground Chocolate and Cocoa Blend', density: 112 / 236.588 },
+    'Sweetened condensed coconut milk': { displayName: 'Sweetened condensed coconut milk', density: 288 / 236.588 },
+    'Sweetened condensed milk': { displayName: 'Sweetened condensed milk', density: 312 / 236.588 },
+    'Tahini paste': { displayName: 'Tahini paste', density: 256 / 236.588 },
+    'Tapioca starch or flour': { displayName: 'Tapioca starch or flour', density: 113 / 236.588 },
+    'Tapioca, quick cooking': { displayName: 'Tapioca, quick cooking', density: 168 / 236.588 },
+    'Teff flour': { displayName: 'Teff flour', density: 135 / 236.588 },
+    'The Works Bread Topping': { displayName: 'The Works Bread Topping', density: 140 / 236.588 },
+    'Toasted Almond Flour': { displayName: 'Toasted Almond Flour', density: 96 / 236.588 },
+    'Toffee chunks': { displayName: 'Toffee chunks', density: 156 / 236.588 },
+    'Tomato paste': { displayName: 'Tomato paste', density: 232 / 236.588 },
+    'Turbinado sugar, raw': { displayName: 'Turbinado sugar, raw', density: 180 / 236.588 },
+    'Unbleached Cake Flour': { displayName: 'Unbleached Cake Flour', density: 120 / 236.588 },
+    'Vanilla Extract': { displayName: 'Vanilla Extract', density: 224 / 236.588 },
+    'Vegetable oil': { displayName: 'Vegetable oil', density: 198 / 236.588 },
+    'Vegetable shortening': { displayName: 'Vegetable shortening', density: 184 / 236.588 },
+    'Vital Wheat Gluten': { displayName: 'Vital Wheat Gluten', density: 144 / 236.588 },
+    'Walnuts, chopped': { displayName: 'Walnuts, chopped', density: 113 / 236.588 },
+    'Walnuts, whole': { displayName: 'Walnuts, whole', density: 128 / 236.588 },
+    'Water': { displayName: 'Water', density: 1 / 1 },
+    'Wheat berries, red': { displayName: 'Wheat berries, red', density: 184 / 236.588 },
+    'Wheat bran': { displayName: 'Wheat bran', density: 64 / 236.588 },
+    'Wheat germ': { displayName: 'Wheat germ', density: 112 / 236.588 },
+    'White Chocolate Chips': { displayName: 'White Chocolate Chips', density: 170 / 236.588 },
+    'White Rye Flour': { displayName: 'White Rye Flour', density: 106 / 236.588 },
+    'White Whole Wheat Flour': { displayName: 'White Whole Wheat Flour', density: 113 / 236.588 },
+    'Whole Grain Flour Blend': { displayName: 'Whole Grain Flour Blend', density: 113 / 236.588 },
+    'Whole Wheat Flour, Premium 100%': { displayName: 'Whole Wheat Flour, Premium 100%', density: 113 / 236.588 },
+    'Whole Wheat Pastry Flour / Graham Flour': { displayName: 'Whole Wheat Pastry Flour / Graham Flour', density: 96 / 236.588 },
+    'Yeast, instant': { displayName: 'Yeast, instant', density: 144 / 236.588 },
+    'Yeast, instant': { displayName: 'Yeast, instant', density: 149.3333333 / 236.588 },
+    'Yeast, instant': { displayName: 'Yeast, instant', density: 144 / 236.588 },
+    'Yogurt': { displayName: 'Yogurt', density: 227 / 236.588 },
   };
   const fractionalNumberRegex = /([0-9]*)[+\s]*([0-9]+)[\s]*\/[\s]*([0-9]+)/;
   const decimalRegex = /([0-9]+\.[0-9]+)/;
   const integerRegex = /([0-9]+)/;
   const toRegex = /to\s+(.*)/;
+  const generateFractionMap = () => {
+    const fractionMap = new Map();
+    for (let i = 2; i <= 64; i++) {
+      for (let j = 1; j < i; j++) {
+        const roundedValue = Math.round((j / i) * 1e5) / 1e5;
+        if (fractionMap.has(roundedValue)) {
+          continue;
+        }
+        const fractionString = j.toString() + '/' + i.toString();
+        fractionMap.set(roundedValue, fractionString);
+      }
+    }
+    return fractionMap;
+  }
+  const fractionMap = generateFractionMap();
+  const toFractionIfApplicable = (value) => {
+    const roundedValue = Math.round(value * 1e5) / 1e5;
+    if (fractionMap.has(roundedValue)) {
+      return fractionMap.get(roundedValue);
+    }
+    let output = roundedValue.toString();
+    if (output.includes('.')) {
+      const firstPart = output.substring(0, output.indexOf('.'));
+      const decimalPoints = Math.max(0, 3 - firstPart.length);
+      output = roundedValue.toFixed(decimalPoints);
+    }
+    if (output.endsWith('.00')) {
+      output = output.substring(0, output.length - 3);
+    }
+    if (output.endsWith('0')) {
+      output = output.substring(0, output.length - 1);
+    }
+    return output;
+  }
   const parse = () => {
+    while (results.firstElementChild) {
+      results.firstElementChild.remove();
+    }
     const input = document.getElementById('input');
     const text = input.value;
     const textLines = text.split(/[\r\n]+/);
@@ -385,43 +431,78 @@
       // console.log(toValue);
       // look for a unit
       // check if there's any mass units in there
-      const frontUnit = matchUnit(centerPart);
-      const backUnit = matchUnit(toValue);
-      console.log(frontUnit);
-      console.log(backUnit);
+      const frontValue = matchUnitAndFood(centerPart);
+      const backUnit = matchUnit(toValue)?.unit;
+      const results = document.getElementById('results');
+      if (frontValue) {
+        const p = document.createElement("p");
+        p.innerText = value + ' ' + frontValue.unit.displayName + ' ' + frontValue.food.displayName;
+        if (backUnit) {
+          const factor = determineFactor(frontValue, backUnit);
+          p.innerText += ' ';
+          p.innerHTML += '&rarr;';
+          p.innerText += ' ' + toFractionIfApplicable(value * factor) + ' ' + backUnit.displayName;
+        }
+        results.appendChild(p);
+      }
     }
   };
-  const matchUnit = (text) => {
-    let matchedUnit = undefined;
-    for (const unit of Object.keys(massUnits)) {
-      const unitRegex = new RegExp('\\b(' + unit.toLowerCase() + ')[es]{0,2}(\\b|$)');
-      if (unitRegex.exec(text)) {
-        matchedUnit = unit;
+  const matchUnitAndFood = (text) => {
+    let matchedUnit = matchUnit(text);
+    if (matchedUnit) {
+      // determine the food
+      const foodPart = text.substring(matchedUnit.end).replace(/^\s*of\s+/, '').trim();
+      for (const food of Object.keys(densityValues)) {
+        const foodRegex = new RegExp('(^|\\b)(' + food.toLowerCase() + ')[es]{0,2}(\\b|$)');
+        const result = foodRegex.exec(foodPart);
+        if (result) {
+          return { 'food': densityValues[food], 'unit': matchedUnit.unit };
+        }
       }
-    }
-    for (const unit of Object.keys(volumeUnits)) {
-      const unitRegex = new RegExp('\\b(' + unit.toLowerCase() + ')[es]{0,2}(\\b|$)');
-      if (unitRegex.exec(text)) {
-        matchedUnit = unit;
-      }
-    }
-    for (const food of Object.keys(specialFoodUnits)) {
-      // search for food
-      const foodRegex = new RegExp('\\b(' + food.toLowerCase() + ')[es]{0,2}(\\b|$)');
-      if (foodRegex.exec(text)) {
-        // its that food
-        // console.log(food);
-        // then check for special units
-        for (const specialUnit of Object.keys(specialFoodUnits[food])) {
-          const unitRegex = new RegExp('\\b(' + specialUnit.toLowerCase() + ')[es]{0,2}(\\b|$)');
-          if (unitRegex.exec(text)) {
-            matchedUnit = specialUnit;
+      return { 'food': { displayName: foodPart, density: undefined }, 'unit': matchedUnit.unit };
+    } else {
+      for (const food of Object.keys(foodSpecificUnits)) {
+        // search for food
+        const foodRegex = new RegExp('(^|\\b)(' + food.toLowerCase() + ')[es]{0,2}(\\b|$)');
+        if (foodRegex.exec(text)) {
+          // its that food
+          // console.log(food);
+          // then check for special units
+          for (const specialUnit of Object.keys(foodSpecificUnits[food])) {
+            const unitRegex = new RegExp('(^|\\b)(' + specialUnit.toLowerCase() + ')[es]{0,2}(\\b|$)');
+            const result = unitRegex.exec(text);
+            if (result) {
+              return { 'food': densityValues[food], 'unit': foodSpecificUnits[food][specialUnit] };
+              break;
+            }
           }
         }
       }
     }
-    return matchedUnit;
+    return undefined;
   };
+  const matchUnit = (text) => {
+    for (const unit of Object.keys(units)) {
+      const unitRegex = new RegExp('(^|\\b)(' + unit.toLowerCase() + ')[es]{0,2}(\\b|$)');
+      const result = unitRegex.exec(text);
+      if (result) {
+        return { 'unit': units[unit], 'end': result.index + result[0].length };
+      }
+    }
+    return undefined;
+  };
+  const determineFactor = (frontValue, backUnit) => {
+    const frontUnit = frontValue.unit;
+    if (frontUnit.type == backUnit.type) {
+      return frontUnit.value / backUnit.value
+    } else if (frontUnit.type == 'g' && backUnit.type == 'mL') {
+      return (frontUnit.value * (1 / frontValue.food.density)) / backUnit.value;
+    } else if (frontUnit.type == 'mL' && backUnit.type == 'g') {
+      return (frontUnit.value * (frontValue.food.density)) / backUnit.value;
+    }
+    return 1;
+  };
+  parse();
 </script>
 
 </html>
