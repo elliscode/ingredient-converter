@@ -2,27 +2,51 @@
 <html>
 
 <head>
+  <title>Ingredient Converter</title>
+  <meta charset="utf-8">
+  <meta name="description" content="Use natural language to convert your ingredients to other units">
+  <meta name="author" content="Daniel Ellis Townsend">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!--https://igoradamenko.github.io/awsm.css/index.html-->
   <link rel="stylesheet" href="awsm.min.css">
 </head>
 
 <body>
-  <header>
+  <header style="margin-bottom:2em;">
     <h1>Ingredient Converter</h1>
     <p>Use natural language to convert your ingredients to other units</p>
   </header>
   <main>
     <article>
-      <section>
-        <h2>How does it work?</h2>
-        <p>Simply write in the amount of your ingredient, and what you would like to convert to, and the calculator will take care of the conversion!</p>
-      </section>
       <section style="position:relative;">
-        <textarea style="height:8em;" placeholder="add your ingredients here" id="input" onkeyup="delayedParse()"></textarea>
+        <textarea style="height:8em;" placeholder="add your ingredients here" id="input"
+          onkeyup="delayedParse()"></textarea>
         <button style="position:absolute; top:0px; right:0px;" onclick="clearText()" id="clear">Clear</button>
       </section>
       <section id="results"></section>
+      <section>
+        <h2>How does it work?</h2>
+        <p>Simply write in the amount of your ingredient, and what you would like to convert to, and the calculator will
+          take care of the conversion!</p>
+        <p>You can even convert from volume units, such as cups, to mass units, such as grams, if you provide an
+          ingredient name with a known density.</p>
+      </section>
+      <section>
+        <h2>Why did you make this?</h2>
+        <p>As an avid home baker, I am always looking up new recipes, and I have found that they are not always in the
+          friendliest ingredient format. For instance, I have no way of measuring mL in my kitchen, and I am often
+          opening up several searches on how to convert from one unit to another. In the hustle and bustle of baking, I
+          don't always get my math correct, which has led to several ruined meals and desserts.</p>
+        <p>Now with the Ingredient Converter, I can simply type in what the recipe states for a given ingredient, and
+          what I would like to measure with, whether that be a mass unit such as grams, or a volume unit such as cups.
+          As long as the ingredient you are using is in our ingredient database with a density, the tool will be able to
+          convert between mass and volume units without issue.</p>
+      </section>
+      <section>
+        <h2>I love your tool, how can I show my appreciation?</h2>
+        <p>If I made your life a little easier, or your day a little brighter, and you want to show your appreciation,
+          feel free to <a href="https://www.buymeacoffee.com/elliscode">buy me a coffee</a>.</p>
+      </section>
     </article>
   </main>
   <footer>
@@ -201,24 +225,25 @@
   const integerRegex = /([0-9]+)/;
   const toRegex = /to\s+(.*)/;
   const generateFractionMap = () => {
-    const fractionMap = new Map();
+    const fractionMap = {};
     for (let i = 2; i <= 64; i++) {
       for (let j = 1; j < i; j++) {
-        const roundedValue = Math.round((j / i) * 1e5) / 1e5;
-        if (fractionMap.has(roundedValue)) {
+        const roundedValue = (j / i).toFixed(5).toString();
+        if (fractionMap.hasOwnProperty(roundedValue)) {
           continue;
         }
         const fractionString = j.toString() + '/' + i.toString();
-        fractionMap.set(roundedValue, fractionString);
+        fractionMap[roundedValue] = fractionString;
       }
     }
     return fractionMap;
-  }
+  };
   const fractionMap = generateFractionMap();
   const toFractionIfApplicable = (value) => {
     const roundedValue = Math.round(value * 1e5) / 1e5;
-    if (fractionMap.has(roundedValue)) {
-      return fractionMap.get(roundedValue);
+    const key = value.toFixed(5);
+    if (fractionMap.hasOwnProperty(key)) {
+      return fractionMap[key];
     }
     let output = roundedValue.toString();
     if (output.includes('.')) {
@@ -232,8 +257,9 @@
       output = output.substring(0, output.length - 1);
     }
     return output;
-  }
-  const parse = () => {
+  };
+  const parseIngredients = () => {
+    const results = document.getElementById('results');
     while (results.firstElementChild) {
       results.firstElementChild.remove();
     }
@@ -243,15 +269,25 @@
     const text = input.value;
     window.localStorage.setItem('text', text);
     const textLines = text.split(/[\r\n]+/);
-    for (const textLine of textLines) {
+    for (let i = 0; i < textLines.length; i++) {
+      const textLine = textLines[i];
       let startIndex = 0;
       let value = 1;
       // first look for a number
       const fractionalNumberResult = fractionalNumberRegex.exec(textLine);
       if (fractionalNumberResult) {
-        const integer = parseInt(fractionalNumberResult[1]) || 0;
-        const numerator = parseInt(fractionalNumberResult[2]) || 0;
-        const denominator = parseInt(fractionalNumberResult[3]) || 1;
+        let integer = parseInt(fractionalNumberResult[1]);
+        if (!integer) {
+          integer = 0;
+        }
+        let numerator = parseInt(fractionalNumberResult[2]);
+        if (!numerator) {
+          numerator = 0;
+        }
+        let denominator = parseInt(fractionalNumberResult[3]);
+        if (!denominator) {
+          denominator = 1;
+        }
         value = integer + (numerator / denominator);
         startIndex = fractionalNumberResult.index + fractionalNumberResult[0].length;
       } else if (decimalRegex.exec(textLine)) {
@@ -279,8 +315,11 @@
       // look for a unit
       // check if there's any mass units in there
       const frontValue = matchUnitAndFood(centerPart);
-      const backUnit = matchUnit(toValue)?.unit;
-      const results = document.getElementById('results');
+      const backValue = matchUnit(toValue);
+      let backUnit = undefined;
+      if (backValue) {
+        backUnit = backValue.unit;
+      }
       if (frontValue) {
         const li = document.createElement("li");
         li.innerText = value + ' ' + frontValue.unit.displayName + ' ' + frontValue.food.displayName;
@@ -299,7 +338,9 @@
     if (matchedUnit) {
       // determine the food
       const foodPart = text.substring(matchedUnit.end).replace(/^\s*of\s+/, '').trim();
-      for (const food of Object.keys(densityValues)) {
+      const densityKeys = Object.keys(densityValues);
+      for (let i = 0; i < densityKeys.length; i++) {
+        const food = densityKeys[i];
         const foodRegex = new RegExp('(^|\\b)(' + food.toLowerCase() + ')[es]{0,2}(\\b|$)');
         const result = foodRegex.exec(foodPart);
         if (result) {
@@ -308,14 +349,18 @@
       }
       return { 'food': { displayName: foodPart, density: undefined }, 'unit': matchedUnit.unit };
     } else {
-      for (const food of Object.keys(foodSpecificUnits)) {
+      const foodSpecificUnitsKeys = Object.keys(foodSpecificUnits);
+      for (let i = 0; i < foodSpecificUnitsKeys.length; i++) {
+        const food = foodSpecificUnitsKeys[i];
         // search for food
         const foodRegex = new RegExp('(^|\\b)(' + food.toLowerCase() + ')[es]{0,2}(\\b|$)');
         if (foodRegex.exec(text)) {
           // its that food
           // console.log(food);
           // then check for special units
-          for (const specialUnit of Object.keys(foodSpecificUnits[food])) {
+          const specialUnitsKeys = Object.keys(foodSpecificUnits[food]);
+          for (let j = 0; j < specialUnitsKeys.length; j++) {
+            const specialUnit = specialUnitsKeys[j];
             const unitRegex = new RegExp('(^|\\b)(' + specialUnit.toLowerCase() + ')[es]{0,2}(\\b|$)');
             const result = unitRegex.exec(text);
             if (result) {
@@ -329,7 +374,9 @@
     return undefined;
   };
   const matchUnit = (text) => {
-    for (const unit of Object.keys(units)) {
+    const unitKeys = Object.keys(units);
+    for (let i = 0; i < unitKeys.length; i++) {
+      const unit = unitKeys[i];
       const unitRegex = new RegExp('(^|\\b)(' + unit.toLowerCase() + ')[es]{0,2}(\\b|$)');
       const result = unitRegex.exec(text);
       if (result) {
@@ -347,28 +394,28 @@
     } else if (frontUnit.type == 'mL' && backUnit.type == 'g') {
       return (frontUnit.value * (frontValue.food.density)) / backUnit.value;
     }
-    return 1;
+    return NaN;
   };
   let parseTimeout = undefined;
   const delayedParse = () => {
     if (parseTimeout) {
       clearTimeout(parseTimeout);
     }
-    parseTimeout = setTimeout(parse, 250);
+    parseTimeout = setTimeout(parseIngredients, 250);
   };
   const loadFromLocalStorage = () => {
     let oldText = window.localStorage.getItem('text');
-    if(!oldText) {
-      oldText = '150 g sugar to cups\n1 1/2 sticks butter to grams\n236 ml milk to cups\n1 1/4 cups flour to g'
+    if (!oldText) {
+      oldText = '150 g sugar to cups\n1 1/2 sticks butter to grams\n236 ml milk to cups\n1 1/4 cups flour to g';
     }
     document.getElementById('input').value = oldText;
   };
   const clearText = () => {
     document.getElementById('input').value = '';
-    parse();
+    parseIngredients();
   };
   loadFromLocalStorage();
-  parse();
+  parseIngredients();
 </script>
 
 </html>
