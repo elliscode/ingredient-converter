@@ -1,5 +1,6 @@
 const units = { // unit: ml
   'cup': { type: 'mL', value: 236.588, displayName: 'cup' },
+  'quart|qt': { type: 'mL', value: 946.353, displayName: 'quart'},
   'tsp|teaspoon|tspoon': { type: 'mL', value: 4.92892, displayName: 'tsp' },
   'TBSP|tablespoon|tbspoon': { type: 'mL', value: 14.78676, displayName: 'TBSP' },
   'mL|milliliter|mililiter|milileter': { type: 'mL', value: 1, displayName: 'mL' },
