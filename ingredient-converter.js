@@ -11,10 +11,10 @@ const units = { // unit: ml
   'lb|pound': { type: 'g', value: 453.592, displayName: 'lb' },
   'kg|kilogram': { type: 'g', value: 1000, displayName: 'kg' },
   'mg|milligram|miligram': { type: 'g', value: 0.001, displayName: 'mg' },
-  'g|gram': { type: 'g', value: 1, displayName: 'g' },
+  'g|gram': { type: 'g', value: 1, displayName: 'g' }
 };
 const foodSpecificUnits = {
-  'Butter': { 'stick|stk': { type: 'g', value: 113.398, displayName: 'stick' } },
+  'Butter': { 'stick|stk': { type: 'g', value: 113.398, displayName: 'stick' } }
 }
 const densityValues = { // g / ml
   'Agave syrup': { displayName: 'Agave syrup', density: 336 / 236.588 },
@@ -103,7 +103,6 @@ const densityValues = { // g / ml
   'Onion': { displayName: 'Onion', density: 142 / 236.588 },
   'Palm shortening': { displayName: 'Palm shortening', density: 180 / 236.588 },
   'Peanut butter': { displayName: 'Peanut butter', density: 270 / 236.588 },
-  'Peanut': { displayName: 'Peanut', density: 142 / 236.588 },
   'Pear': { displayName: 'Pears', density: 163 / 236.588 },
   'Pecan': { displayName: 'Pecan', density: 114 / 236.588 },
   'Pine nuts': { displayName: 'Pine nuts', density: 142 / 236.588 },
@@ -163,6 +162,8 @@ const densityValues = { // g / ml
   'Whole Wheat Pastry Flour / Graham Flour': { displayName: 'Whole Wheat Pastry Flour / Graham Flour', density: 96 / 236.588 },
   'Yeast': { displayName: 'Yeast', density: 144 / 236.588 },
   'Yogurt': { displayName: 'Yogurt', density: 227 / 236.588 },
+  'Oil': { displayName: 'Oil', density: 198 / 236.588 },
+  'Peanut': { displayName: 'Peanut', density: 142 / 236.588 }
 };
 const fractionalNumberRegex = /([0-9]*)[+\s]*([0-9]+)[\s]*\/[\s]*([0-9]+)/;
 const decimalRegex = /([0-9]+\.[0-9]+)/;
@@ -369,3 +370,6 @@ const clearText = () => {
 };
 loadFromLocalStorage();
 parseIngredients();
+if (navigator.userAgent.includes('KAIOS/')) {
+  input.focus();
+}
