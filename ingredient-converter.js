@@ -371,5 +371,5 @@ const clearText = () => {
 loadFromLocalStorage();
 parseIngredients();
 if (navigator.userAgent.includes('KAIOS/')) {
-  input.focus();
+  // input.focus();
 }
